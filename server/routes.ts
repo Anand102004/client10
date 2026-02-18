@@ -35,9 +35,24 @@ export async function registerRoutes(
     res.json(seats);
   });
 
+  app.get(api.seats.availability.path, async (req, res) => {
+    const { hours, slot, date } = req.query;
+    if (!hours || !slot || !date) {
+      return res.status(400).json({ message: "Missing required query parameters" });
+    }
+    const availability = await storage.getSeatAvailability(String(hours), String(slot), String(date));
+    res.json(availability);
+  });
+
   app.patch(api.seats.update.path, async (req, res) => {
     const seat = await storage.updateSeat(Number(req.params.id), req.body);
     res.json(seat);
+  });
+
+  // Bookings
+  app.post(api.bookings.create.path, async (req, res) => {
+    const booking = await storage.createBooking(req.body);
+    res.status(201).json(booking);
   });
 
   // Enquiries
@@ -55,6 +70,11 @@ export async function registerRoutes(
   app.get(api.invoices.list.path, async (req, res) => {
     const invoices = await storage.getInvoices();
     res.json(invoices);
+  });
+
+  app.patch(api.invoices.update.path, async (req, res) => {
+    const invoice = await storage.updateInvoice(Number(req.params.id), req.body);
+    res.json(invoice);
   });
 
   // Attendance

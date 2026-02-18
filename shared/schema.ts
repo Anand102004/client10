@@ -25,6 +25,17 @@ export const seats = pgTable("seats", {
   planType: text("plan_type"), // Restriction: rows 1-2 only for 15_hours
 });
 
+// Seat Bookings (to handle slots)
+export const seatBookings = pgTable("seat_bookings", {
+  id: serial("id").primaryKey(),
+  seatId: integer("seat_id").references(() => seats.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  hours: text("hours").notNull(), // '3', '5', '10', '15'
+  slot: text("slot").notNull(), // '12-5', '5-10', etc.
+  date: date("date").notNull(),
+  status: text("status").notNull().default("pending"), // 'pending', 'confirmed'
+});
+
 // Enquiries
 export const enquiries = pgTable("enquiries", {
   id: serial("id").primaryKey(),
@@ -42,9 +53,11 @@ export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  status: text("status").notNull(), // 'paid', 'pending'
+  status: text("status").notNull(), // 'paid', 'pending', 'verifying'
   dueDate: timestamp("due_date"),
   paidAt: timestamp("paid_at"),
+  transactionId: text("transaction_id"),
+  paymentScreenshot: text("payment_screenshot"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -61,6 +74,7 @@ export const attendance = pgTable("attendance", {
 // Zod Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, joinedAt: true });
 export const insertSeatSchema = createInsertSchema(seats).omit({ id: true });
+export const insertSeatBookingSchema = createInsertSchema(seatBookings).omit({ id: true });
 export const insertEnquirySchema = createInsertSchema(enquiries).omit({ id: true, createdAt: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
@@ -69,6 +83,7 @@ export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Seat = typeof seats.$inferSelect;
+export type SeatBooking = typeof seatBookings.$inferSelect;
 export type Enquiry = typeof enquiries.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;

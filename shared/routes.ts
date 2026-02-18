@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import { insertUserSchema, insertEnquirySchema, insertInvoiceSchema, insertSeatSchema, insertAttendanceSchema } from './schema';
+import { insertUserSchema, insertEnquirySchema, insertInvoiceSchema, insertSeatSchema, insertAttendanceSchema, insertSeatBookingSchema } from './schema';
 
 export const api = {
   users: {
@@ -44,6 +44,28 @@ export const api = {
         200: z.any(),
       },
     },
+    availability: {
+      method: 'GET' as const,
+      path: '/api/seats/availability' as const,
+      input: z.object({
+        hours: z.string(),
+        slot: z.string(),
+        date: z.string(),
+      }),
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+  },
+  bookings: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/bookings' as const,
+      input: insertSeatBookingSchema,
+      responses: {
+        201: z.any(),
+      },
+    },
   },
   enquiries: {
     list: {
@@ -68,6 +90,18 @@ export const api = {
       path: '/api/invoices' as const,
       responses: {
         200: z.array(z.any()),
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/invoices/:id' as const,
+      input: z.object({
+        status: z.string(),
+        transactionId: z.string().optional(),
+        paymentScreenshot: z.string().optional(),
+      }),
+      responses: {
+        200: z.any(),
       },
     },
   },

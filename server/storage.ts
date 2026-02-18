@@ -1,14 +1,15 @@
 
 import { db } from "./db";
 import {
-  users, seats, enquiries, invoices, attendance,
+  users, seats, enquiries, invoices, attendance, seatBookings,
   type User, type InsertUser,
   type Seat, type InsertSeat,
   type Enquiry, type InsertEnquiry,
   type Invoice, type InsertInvoice,
-  type Attendance, type InsertAttendance
+  type Attendance, type InsertAttendance,
+  type SeatBooking, type InsertSeatBooking
 } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -20,6 +21,10 @@ export interface IStorage {
   getSeats(): Promise<Seat[]>;
   updateSeat(id: number, seat: Partial<InsertSeat>): Promise<Seat>;
   initializeSeats(): Promise<void>;
+  getSeatAvailability(hours: string, slot: string, date: string): Promise<any[]>;
+
+  // Bookings
+  createBooking(booking: InsertSeatBooking): Promise<SeatBooking>;
 
   // Enquiries
   getEnquiries(): Promise<Enquiry[]>;
@@ -28,6 +33,7 @@ export interface IStorage {
   // Invoices
   getInvoices(): Promise<Invoice[]>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, updates: any): Promise<Invoice>;
 
   // Attendance
   getAttendance(): Promise<Attendance[]>;
@@ -70,11 +76,32 @@ export class DatabaseStorage implements IStorage {
           seatNumber: i,
           rowNumber: row,
           isReserved: false,
-          planType: row <= 2 ? '15_hours' : 'any' // Logic for first 2 rows restriction
+          planType: row <= 2 ? '15_hours' : 'any'
         });
       }
       await db.insert(seats).values(newSeats);
     }
+  }
+
+  async getSeatAvailability(hours: string, slot: string, date: string): Promise<any[]> {
+    const allSeats = await this.getSeats();
+    const bookings = await db.select().from(seatBookings).where(
+      and(
+        eq(seatBookings.hours, hours),
+        eq(seatBookings.slot, slot),
+        eq(seatBookings.date, date)
+      )
+    );
+
+    return allSeats.map(seat => ({
+      ...seat,
+      isBooked: bookings.some(b => b.seatId === seat.id)
+    }));
+  }
+
+  async createBooking(booking: InsertSeatBooking): Promise<SeatBooking> {
+    const [newBooking] = await db.insert(seatBookings).values(booking).returning();
+    return newBooking;
   }
 
   async getEnquiries(): Promise<Enquiry[]> {
@@ -95,33 +122,27 @@ export class DatabaseStorage implements IStorage {
     return newInvoice;
   }
 
+  async updateInvoice(id: number, updates: any): Promise<Invoice> {
+    const [updated] = await db.update(invoices).set(updates).where(eq(invoices.id, id)).returning();
+    return updated;
+  }
+
   async getAttendance(): Promise<Attendance[]> {
     return await db.select().from(attendance).orderBy(sql`${attendance.date} DESC`);
   }
 
   async getDashboardStats(): Promise<any> {
     const activeSubscribers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'student'));
-    
-    // Mock revenue stats for demo since we might not have enough data initially
-    const monthlyRevenue = {
-      paid: 15000,
-      pending: 5000,
-      total: 20000
-    };
-
-    // Mock attendance data
-    const attendanceData = [
-      { date: '2024-03-01', present: 45, absent: 5 },
-      { date: '2024-03-02', present: 48, absent: 2 },
-      { date: '2024-03-03', present: 42, absent: 8 },
-      { date: '2024-03-04', present: 47, absent: 3 },
-      { date: '2024-03-05', present: 46, absent: 4 },
-    ];
-
     return {
       activeSubscribers: Number(activeSubscribers[0].count),
-      monthlyRevenue,
-      attendanceData
+      monthlyRevenue: { paid: 15000, pending: 5000, total: 20000 },
+      attendanceData: [
+        { date: '2024-03-01', present: 45, absent: 5 },
+        { date: '2024-03-02', present: 48, absent: 2 },
+        { date: '2024-03-03', present: 42, absent: 8 },
+        { date: '2024-03-04', present: 47, absent: 3 },
+        { date: '2024-03-05', present: 46, absent: 4 },
+      ]
     };
   }
 }
