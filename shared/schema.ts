@@ -1,18 +1,74 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+
+import { pgTable, text, serial, integer, boolean, timestamp, date, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Students/Users
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  role: text("role").notNull().default("student"), // 'admin' | 'student'
+  course: text("course"),
+  planType: text("plan_type"), // '3_hours', '5_hours', '15_hours'
+  joinedAt: timestamp("joined_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// Seat allocation
+export const seats = pgTable("seats", {
+  id: serial("id").primaryKey(),
+  seatNumber: integer("seat_number").notNull(), // 1-100
+  rowNumber: integer("row_number").notNull(),
+  isReserved: boolean("is_reserved").default(false),
+  userId: integer("user_id").references(() => users.id),
+  planType: text("plan_type"), // Restriction: rows 1-2 only for 15_hours
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Enquiries
+export const enquiries = pgTable("enquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  course: text("course"),
+  preferredSlot: text("preferred_slot"),
+  status: text("status").default("pending"), // 'pending', 'admitted', 'rejected'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Invoices/Payments
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull(), // 'paid', 'pending'
+  dueDate: timestamp("due_date"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Attendance
+export const attendance = pgTable("attendance", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  date: date("date").notNull(),
+  status: text("status").notNull(), // 'present', 'absent'
+  checkIn: timestamp("check_in"),
+  checkOut: timestamp("check_out"),
+});
+
+// Zod Schemas
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, joinedAt: true });
+export const insertSeatSchema = createInsertSchema(seats).omit({ id: true });
+export const insertEnquirySchema = createInsertSchema(enquiries).omit({ id: true, createdAt: true });
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
+export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
+
+// Types
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Seat = typeof seats.$inferSelect;
+export type Enquiry = typeof enquiries.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;
+export type Attendance = typeof attendance.$inferSelect;
