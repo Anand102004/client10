@@ -1,18 +1,17 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Trash2, Send, Image as ImageIcon, Video, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function Community() {
   const { role, user } = useAuth();
@@ -53,7 +52,7 @@ export default function Community() {
     e.preventDefault();
     if (!content.trim()) return;
     createPostMutation.mutate({
-      userId: user.id,
+      userId: user?.id,
       content,
       imageUrl: imageUrl || null,
       videoUrl: videoUrl || null,
@@ -62,15 +61,15 @@ export default function Community() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="container max-w-4xl py-8 space-y-8">
-      <Card>
+      <Card className="border-none shadow-md">
         <CardHeader>
           <CardTitle>Community Doubts</CardTitle>
         </CardHeader>
@@ -80,7 +79,7 @@ export default function Community() {
               placeholder="What's your doubt?"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[100px] resize-none"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
@@ -141,72 +140,78 @@ function PostCard({ post, isAdmin, onDelete }: { post: any; isAdmin: boolean; on
     if (!comment.trim()) return;
     createCommentMutation.mutate({
       postId: post.id,
-      userId: user.id,
+      userId: user?.id,
       content: comment,
     });
   };
 
   return (
-    <Card className="hover-elevate">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+    <Card className="border-none shadow-md overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
         <div className="flex items-center gap-3">
           <Avatar>
-            <AvatarFallback>{post.user?.name?.[0]}</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary">{post.user?.name?.[0]}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium">{post.user?.name}</p>
-            <p className="text-xs text-muted-foreground">{format(new Date(post.createdAt), "PPP p")}</p>
+            <p className="font-semibold text-sm">{post.user?.name}</p>
+            <p className="text-[10px] text-muted-foreground">{format(new Date(post.createdAt), "PPP p")}</p>
           </div>
         </div>
         {isAdmin && (
-          <Button variant="ghost" size="icon" onClick={onDelete} className="text-destructive hover:text-destructive">
+          <Button variant="ghost" size="icon" onClick={onDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8">
             <Trash2 className="w-4 h-4" />
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="whitespace-pre-wrap">{post.content}</p>
+      <CardContent className="px-4 py-2 space-y-4">
+        <p className="text-sm whitespace-pre-wrap">{post.content}</p>
         {post.imageUrl && (
-          <img src={post.imageUrl} alt="Post image" className="rounded-md max-h-[400px] w-full object-cover border" />
+          <div className="rounded-lg overflow-hidden border bg-muted/30">
+            <img src={post.imageUrl} alt="Post image" className="max-h-[400px] w-full object-contain" />
+          </div>
         )}
-        {post.videoUrl && post.videoUrl.includes("youtube.com") ? (
-          <iframe
-            className="w-full aspect-video rounded-md border"
-            src={`https://www.youtube.com/embed/${post.videoUrl.split("v=")[1]?.split("&")[0]}`}
-            allowFullScreen
-          />
+        {post.videoUrl && (post.videoUrl.includes("youtube.com") || post.videoUrl.includes("youtu.be")) ? (
+          <div className="rounded-lg overflow-hidden border aspect-video bg-black">
+            <iframe
+              className="w-full h-full"
+              src={`https://www.youtube.com/embed/${post.videoUrl.split("v=")[1]?.split("&")[0] || post.videoUrl.split("/").pop()}`}
+              allowFullScreen
+            />
+          </div>
         ) : post.videoUrl && (
-          <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block truncate">
-            <Video className="w-4 h-4 inline mr-2" />
-            {post.videoUrl}
+          <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30 text-sm text-primary hover:bg-muted transition-colors">
+            <Video className="w-4 h-4" />
+            <span className="truncate">{post.videoUrl}</span>
           </a>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col items-stretch border-t p-4 space-y-4">
-        <div className="space-y-3">
+      <CardFooter className="flex flex-col items-stretch p-0 bg-muted/10">
+        <div className="p-4 space-y-3">
           {post.comments?.map((c: any) => (
-            <div key={c.id} className="flex gap-3 text-sm">
+            <div key={c.id} className="flex gap-2 text-xs">
               <Avatar className="w-6 h-6">
-                <AvatarFallback className="text-[10px]">{c.user?.name?.[0]}</AvatarFallback>
+                <AvatarFallback className="text-[8px] bg-secondary/20">{c.user?.name?.[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex-1 bg-muted/50 p-2 rounded-md">
-                <p className="font-semibold text-xs">{c.user?.name}</p>
-                <p>{c.content}</p>
+              <div className="flex-1 bg-white p-2 rounded-lg border shadow-sm">
+                <p className="font-bold text-[10px] mb-0.5">{c.user?.name}</p>
+                <p className="text-muted-foreground">{c.content}</p>
               </div>
             </div>
           ))}
         </div>
-        <form onSubmit={handleCommentSubmit} className="flex gap-2">
-          <Input
-            placeholder="Write a clarification..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" disabled={createCommentMutation.isPending}>
-            <MessageSquare className="w-4 h-4" />
-          </Button>
-        </form>
+        <div className="p-4 pt-0">
+          <form onSubmit={handleCommentSubmit} className="flex gap-2">
+            <Input
+              placeholder="Write a clarification..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="flex-1 h-9 text-sm"
+            />
+            <Button type="submit" size="icon" className="h-9 w-9" disabled={createCommentMutation.isPending}>
+              <MessageSquare className="w-4 h-4" />
+            </Button>
+          </form>
+        </div>
       </CardFooter>
     </Card>
   );

@@ -84,8 +84,16 @@ export async function registerRoutes(
   });
 
   app.post(api.posts.create.path, async (req, res) => {
-    const post = await storage.createPost(req.body);
-    res.status(201).json(post);
+    try {
+      const input = api.posts.create.input.parse(req.body);
+      const post = await storage.createPost(input);
+      res.status(201).json(post);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.delete(api.posts.delete.path, async (req, res) => {
