@@ -32,6 +32,18 @@ async function seed() {
     planType: "15_hours"
   });
 
+  // Create some community posts
+  await storage.createPost({
+    userId: student1.id,
+    content: "Can someone help me with this UPSC question? It's about the basic structure doctrine.",
+  });
+
+  await storage.createPost({
+    userId: student2.id,
+    content: "Check out this video on CAT preparation strategy!",
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  });
+
   // Create some enquiries
   await storage.createEnquiry({
     name: "Charlie Brown",

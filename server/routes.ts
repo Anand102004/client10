@@ -77,6 +77,33 @@ export async function registerRoutes(
     res.json(invoice);
   });
 
+  // Posts
+  app.get(api.posts.list.path, async (req, res) => {
+    const posts = await storage.getPosts();
+    res.json(posts);
+  });
+
+  app.post(api.posts.create.path, async (req, res) => {
+    const post = await storage.createPost(req.body);
+    res.status(201).json(post);
+  });
+
+  app.delete(api.posts.delete.path, async (req, res) => {
+    await storage.deletePost(Number(req.params.id));
+    res.json({ success: true });
+  });
+
+  // Comments
+  app.post(api.comments.create.path, async (req, res) => {
+    const comment = await storage.createComment(req.body);
+    res.status(201).json(comment);
+  });
+
+  app.get(api.comments.list.path, async (req, res) => {
+    const comments = await storage.getComments(Number(req.params.postId));
+    res.json(comments);
+  });
+
   // Attendance
   app.get(api.attendance.list.path, async (req, res) => {
     const attendance = await storage.getAttendance();

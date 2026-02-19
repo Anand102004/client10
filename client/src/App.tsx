@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 // Pages
 import Home from "@/pages/home";
 import Login from "@/pages/login";
+import Community from "@/pages/community";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminEnquiries from "@/pages/admin-enquiries";
 import AdminAdmissions from "@/pages/admin-admissions";
@@ -31,6 +32,15 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      
+      {/* Shared Routes */}
+      <Route path="/community">
+        {(params) => {
+          const { role } = useAuth();
+          if (!role) return <Redirect to="/login" />;
+          return <Community />;
+        }}
+      </Route>
       
       {/* Admin Routes */}
       <Route path="/admin/dashboard">

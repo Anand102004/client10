@@ -1,13 +1,15 @@
 
 import { db } from "./db";
 import {
-  users, seats, enquiries, invoices, attendance, seatBookings,
+  users, seats, enquiries, invoices, attendance, seatBookings, posts, comments,
   type User, type InsertUser,
   type Seat, type InsertSeat,
   type Enquiry, type InsertEnquiry,
   type Invoice, type InsertInvoice,
   type Attendance, type InsertAttendance,
-  type SeatBooking, type InsertSeatBooking
+  type SeatBooking, type InsertSeatBooking,
+  type Post, type InsertPost,
+  type Comment, type InsertComment
 } from "@shared/schema";
 import { eq, sql, and } from "drizzle-orm";
 
@@ -25,6 +27,13 @@ export interface IStorage {
 
   // Bookings
   createBooking(booking: InsertSeatBooking): Promise<SeatBooking>;
+
+  // Community
+  getPosts(): Promise<(Post & { user: User; comments: (Comment & { user: User })[] })[]>;
+  createPost(post: InsertPost): Promise<Post>;
+  deletePost(id: number): Promise<void>;
+  getComments(postId: number): Promise<(Comment & { user: User })[]>;
+  createComment(comment: InsertComment): Promise<Comment>;
 
   // Enquiries
   getEnquiries(): Promise<Enquiry[]>;
@@ -102,6 +111,42 @@ export class DatabaseStorage implements IStorage {
   async createBooking(booking: InsertSeatBooking): Promise<SeatBooking> {
     const [newBooking] = await db.insert(seatBookings).values(booking).returning();
     return newBooking;
+  }
+
+  async getPosts(): Promise<(Post & { user: User; comments: (Comment & { user: User })[] })[]> {
+    const allPosts = await db.select().from(posts).orderBy(sql`${posts.createdAt} DESC`);
+    const results = [];
+    for (const post of allPosts) {
+      const user = await this.getUser(post.userId);
+      const postComments = await this.getComments(post.id);
+      results.push({ ...post, user: user!, comments: postComments });
+    }
+    return results;
+  }
+
+  async createPost(post: InsertPost): Promise<Post> {
+    const [newPost] = await db.insert(posts).values(post).returning();
+    return newPost;
+  }
+
+  async deletePost(id: number): Promise<void> {
+    await db.delete(comments).where(eq(comments.postId, id));
+    await db.delete(posts).where(eq(posts.id, id));
+  }
+
+  async getComments(postId: number): Promise<(Comment & { user: User })[]> {
+    const postComments = await db.select().from(comments).where(eq(comments.postId, postId));
+    const results = [];
+    for (const comment of postComments) {
+      const user = await this.getUser(comment.userId);
+      results.push({ ...comment, user: user! });
+    }
+    return results;
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const [newComment] = await db.insert(comments).values(comment).returning();
+    return newComment;
   }
 
   async getEnquiries(): Promise<Enquiry[]> {

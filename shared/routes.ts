@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import { insertUserSchema, insertEnquirySchema, insertInvoiceSchema, insertSeatSchema, insertAttendanceSchema, insertSeatBookingSchema } from './schema';
+import { insertUserSchema, insertEnquirySchema, insertInvoiceSchema, insertSeatSchema, insertAttendanceSchema, insertSeatBookingSchema, insertPostSchema, insertCommentSchema } from './schema';
 
 export const api = {
   users: {
@@ -64,6 +64,48 @@ export const api = {
       input: insertSeatBookingSchema,
       responses: {
         201: z.any(),
+      },
+    },
+  },
+  posts: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/posts' as const,
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/posts' as const,
+      input: insertPostSchema,
+      responses: {
+        201: z.any(),
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/posts/:id' as const,
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: z.object({ message: z.string() }),
+      },
+    },
+  },
+  comments: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/comments' as const,
+      input: insertCommentSchema,
+      responses: {
+        201: z.any(),
+      },
+    },
+    list: {
+      method: 'GET' as const,
+      path: '/api/posts/:postId/comments' as const,
+      responses: {
+        200: z.array(z.any()),
       },
     },
   },

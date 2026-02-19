@@ -8,7 +8,8 @@ import {
   Receipt, 
   LogOut, 
   Armchair,
-  BookOpen
+  BookOpen,
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,12 +27,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/admin/admissions", label: "Admissions & Seats", icon: Armchair },
     { href: "/admin/invoices", label: "Invoices", icon: Receipt },
     { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
+    { href: "/community", label: "Community", icon: MessageSquare },
   ];
 
   const studentLinks = [
     { href: "/student/dashboard", label: "My Dashboard", icon: LayoutDashboard },
     { href: "/student/invoices", label: "My Invoices", icon: Receipt },
     { href: "/student/attendance", label: "My Attendance", icon: CalendarCheck },
+    { href: "/community", label: "Community", icon: MessageSquare },
   ];
 
   const links = role === 'admin' ? adminLinks : studentLinks;

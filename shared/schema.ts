@@ -36,6 +36,25 @@ export const seatBookings = pgTable("seat_bookings", {
   status: text("status").notNull().default("pending"), // 'pending', 'confirmed'
 });
 
+// Community Doubts/Posts
+export const posts = pgTable("posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Community Comments/Clarifications
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Enquiries
 export const enquiries = pgTable("enquiries", {
   id: serial("id").primaryKey(),
@@ -75,6 +94,8 @@ export const attendance = pgTable("attendance", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, joinedAt: true });
 export const insertSeatSchema = createInsertSchema(seats).omit({ id: true });
 export const insertSeatBookingSchema = createInsertSchema(seatBookings).omit({ id: true });
+export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertEnquirySchema = createInsertSchema(enquiries).omit({ id: true, createdAt: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
@@ -84,6 +105,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Seat = typeof seats.$inferSelect;
 export type SeatBooking = typeof seatBookings.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
 export type Enquiry = typeof enquiries.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;
