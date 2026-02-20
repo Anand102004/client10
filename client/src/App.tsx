@@ -8,7 +8,8 @@ import NotFound from "@/pages/not-found";
 
 // Pages
 import Home from "@/pages/home";
-import Login from "@/pages/login";
+import AuthPage from "@/pages/auth-page";
+import StudentAdmission from "@/pages/student-admission";
 import Community from "@/pages/community";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminEnquiries from "@/pages/admin-enquiries";
@@ -31,7 +32,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
+      <Route path="/login" component={AuthPage} />
+      <Route path="/auth" component={AuthPage} />
+      <Route path="/student/admission" component={StudentAdmission} />
       
       {/* Shared Routes */}
       <Route path="/community">
