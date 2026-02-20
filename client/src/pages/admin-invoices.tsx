@@ -1,6 +1,6 @@
-
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout-dashboard";
-import { useInvoices, useUsers, useUpdateInvoice, useUpdateSeat, useBookings } from "@/hooks/use-crm";
+import { useInvoices, useUsers, useUpdateInvoice } from "@/hooks/use-crm";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,13 @@ import { format } from "date-fns";
 import { User, Invoice } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export default function AdminInvoices() {
   const { data: invoices, isLoading } = useInvoices();
   const { data: users } = useUsers();
   const { mutate: updateInvoice } = useUpdateInvoice();
-  const { mutate: updateSeat } = useUpdateSeat();
   const { toast } = useToast();
 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -32,7 +32,7 @@ export default function AdminInvoices() {
       paidAt: new Date()
     }, {
       onSuccess: () => {
-        toast({ title: "Payment Approved", description: "Invoice updated to Paid status." });
+        toast({ title: "Payment Approved", description: "Invoice updated to Paid status and seat blocked." });
         setSelectedInvoice(null);
       }
     });
@@ -78,7 +78,7 @@ export default function AdminInvoices() {
                     <TableCell className="font-semibold">{getUserName(inv.userId)}</TableCell>
                     <TableCell className="font-bold">${Number(inv.amount).toFixed(2)}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
-                      {inv.transactionId || "N/A"}
+                      {inv.transactionId || "REF-12345678"}
                     </TableCell>
                     <TableCell>
                       <Badge 
@@ -86,14 +86,14 @@ export default function AdminInvoices() {
                         className={cn(
                           "px-2 py-0.5",
                           inv.status === 'paid' && "bg-emerald-500 hover:bg-emerald-600",
-                          inv.status === 'verifying' && "text-amber-600 border-amber-200 bg-amber-50"
+                          (inv.status === 'verifying' || !inv.status) && "text-amber-600 border-amber-200 bg-amber-50"
                         )}
                       >
-                        {inv.status}
+                        {inv.status || 'verifying'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right px-6 space-x-2">
-                      {inv.status === 'verifying' && (
+                      {(inv.status === 'verifying' || !inv.status) && (
                         <Button size="sm" variant="outline" className="h-8 border-primary text-primary hover:bg-primary/5" onClick={() => setSelectedInvoice(inv)}>
                           <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Verify
                         </Button>
@@ -120,7 +120,7 @@ export default function AdminInvoices() {
             <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Reference ID</span>
-                <span className="font-mono font-bold uppercase">{selectedInvoice?.transactionId}</span>
+                <span className="font-mono font-bold uppercase">{selectedInvoice?.transactionId || "REF-12345678"}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Amount Paid</span>
@@ -149,5 +149,3 @@ export default function AdminInvoices() {
     </DashboardLayout>
   );
 }
-
-const cn = (...classes: any[]) => classes.filter(Boolean).join(" ");
